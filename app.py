@@ -2,47 +2,46 @@ import streamlit as st
 import numpy as np
 from scipy.optimize import linprog
 
-st.title("Optimización de Resistencias y Capacitores")
+st.title("Optimización de producción de resistencias y condensadores")
 
-st.write("Maximización de producción usando programación lineal")
-
-st.write("### Variables:")
-st.write("x1, x2, x3 = resistencias")
-st.write("x4, x5, x6 = capacitores")
+st.write("Maximizar la ganancia total de la fábrica")
 
 if st.button("Calcular solución óptima"):
 
-    # Función objetivo (maximizar → ponemos negativo)
+    # Maximizar → se multiplica por -1
     c = [-2, -3, -5, -4, -6, -8]
 
-    # Restricciones
+    # Restricciones del problema (Ax <= b)
     A = [
-        [1,1,1,0,0,0],        # resistencias ≤ 1000
-        [0,0,0,1,1,1],        # capacitores ≤ 800
-        [0.5,0.7,0.9,0.8,1.0,1.2],  # tiempo ≤ 2000
+        [1,1,1,0,0,0],                 # resistencias ≤ 1000
+        [0,0,0,1,1,1],                 # condensadores ≤ 800
+        [0.5,0.7,0.9,0.8,1.0,1.2],     # tiempo ≤ 2000
         [0.01,0.015,0.02,0.05,0.08,0.1], # material ≤ 50
-        [-1,-1,0,0,1,1]       # restricción combinada
+        [-1,-1,0,1,1,1],              # x5+x6 ≤ x1+x2
     ]
 
-    bu = [1000, 800, 2000, 50, 0]
-    bl = [0, 0, 0, 0, 0]
+    b = [1000, 800, 2000, 50, 0]
 
-    constraints = LinearConstraint(A, bl, bu)
-    bounds = Bounds([0]*6, [np.inf]*6)
+    bounds = [(0, None)] * 6
 
-    res = milp(
+    res = linprog(
         c=c,
-        constraints=constraints,
+        A_ub=A,
+        b_ub=b,
         bounds=bounds,
-        integrality=[0]*6
+        method="highs"
     )
 
     if res.success:
         st.success("Solución encontrada")
 
-        for i, val in enumerate(res.x):
-            st.write(f"x{i+1} =", val)
+        variables = ["x1 (1kΩ)", "x2 (10kΩ)", "x3 (100kΩ)",
+                     "x4 (10µF)", "x5 (100µF)", "x6 (1000µF)"]
 
-        st.write("Valor óptimo:", -res.fun)
+        for i, val in enumerate(res.x):
+            st.write(f"{variables[i]} = {val:.2f}")
+
+        st.write("Ganancia máxima:", -res.fun)
+
     else:
         st.error("No se encontró solución")
