@@ -1,6 +1,6 @@
 import streamlit as st
 import numpy as np
-from scipy.optimize import milp, LinearConstraint, Bounds
+from scipy.optimize import linprog
 
 st.title("Optimización de Resistencias y Capacitores")
 
